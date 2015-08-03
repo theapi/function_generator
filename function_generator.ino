@@ -57,14 +57,10 @@ void setup()
 
 void loop() 
 { 
-
-  for (int i=0;i<255;i++) { 
-    PORTD=sine[i]; 
-    _delay_loop_2(pot);
-          
-  }
+  //wave_sine();
+  wave_triangle();
      
-  
+  // Read pot
   pot = ADCL;  // read low byte first  
   pot |= ADCH << 8;  // then high
 
@@ -74,5 +70,27 @@ void loop()
     pot = POT_MAX; 
   }
 
+}
+
+void wave_sine()
+{
+  for (int i = 0; i < 255; i++) { 
+    PORTD = sine[i]; 
+    _delay_loop_2(pot);
+          
+  }
+}
+
+void wave_triangle()
+{
+  for (int i = 0; i < 255; i = i+2) { 
+    PORTD = i; 
+    _delay_loop_2(pot);      
+  }
+  for (int i = 255; i > 0; i = i-2) { 
+    PORTD = i; 
+    _delay_loop_2(pot);      
+  }
 
 }
+
