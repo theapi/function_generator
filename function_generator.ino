@@ -1,19 +1,20 @@
+/**
 
+ 15 Hz to 1kHz sine wave on 2R-R resistor ladder DAC.
+ 
+ 
+ */
 #include <util/delay_basic.h>
 
-/*
-#ifndef cbi
-#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#endif
-#ifndef sbi
-#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
-#endif
-*/
+
+#define POT_MAX 12 // 1kHz
+
+//#define PIN_SWITCH_A 16 // A2 (PC2 - PCINT10)
+//#define PIN_SWITCH_B 17 // A3 (PC3 - PCINT11)
+//#define PIN_SWITCH_C 18 // A4 (PC4 - PCINT12)
 
 int sine[255];
-int pot;
-byte pot_h;
-byte pot_l;
+int pot = 512;
 
 void setup() 
 { 
@@ -34,15 +35,9 @@ void setup()
           y=sin((x/255)*2*PI);
           sine[i]=int(y*128)+128;
      }
+
      
-     /*
-     // Faster analogRead()
-     sbi(ADCSRA,ADPS2);
-     cbi(ADCSRA,ADPS1);
-     cbi(ADCSRA,ADPS0);
-     */
-     
-  //set up continuous sampling of analog pin 0 (you don't need to understand this part, just know how to use it in the loop())
+  //set up continuous sampling of analog pin 0
   
   //clear ADCSRA and ADCSRB registers
   ADCSRA = 0;
@@ -52,41 +47,32 @@ void setup()
   //ADMUX |= (1 << ADLAR); //left align the ADC value- so we can read highest 8 bits from ADCH register only
   
   ADCSRA |= (1 << ADPS2) | (1 << ADPS0); //set ADC clock with 32 prescaler- 16mHz/32=500kHz
-  ADCSRA |= (1 << ADATE); //enabble auto trigger
+  ADCSRA |= (1 << ADATE); //enable auto trigger
   ADCSRA |= (1 << ADEN); //enable ADC
   ADCSRA |= (1 << ADSC); //start ADC measurements
      
-     noInterrupts(); // more stable without interuptions
+  noInterrupts(); // more stable without interuptions
      
-
 } 
 
 void loop() 
 { 
 
-     for (int i=0;i<255;i++) 
-     { 
-          PORTD=sine[i]; 
- 
+  for (int i=0;i<255;i++) { 
+    PORTD=sine[i]; 
+    _delay_loop_2(pot);
           
-          //_delay_loop_1(255); // 80.6 Hz
-          //_delay_loop_1(127); // 160 Hz
-          //_delay_loop_1(63); // 312 Hz
-          //_delay_loop_1(31); // 588 Hz
-          _delay_loop_1(15); // 1.14 kHz
-          //_delay_loop_1(7); // 2.00 kHz
-          //_delay_loop_1(3); // 3.33 kHz
-          
-          //  no analogRead() 1.03kHz (Uno)
-          
-          //_delay_loop_1(100);
-          //pot = ADCH; // get new value from A0 3.57kHz
-          //analogRead(A0); // no delay = 229Hz (default analogRead speed = 35Hz)
-     }
+  }
      
-     // // get new value from A0
-     pot_l = ADCL;
-     pot_h = ADCH;  //6.25kHz
-     //pot = 
+  
+  pot = ADCL;  // read low byte first  
+  pot |= ADCH << 8;  // then high
+
+  
+  if (pot < POT_MAX) {
+    // Limit the max frequency as it gets tricky to control
+    pot = POT_MAX; 
+  }
+
 
 }
