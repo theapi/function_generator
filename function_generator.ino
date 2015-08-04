@@ -14,7 +14,7 @@
 //#define PIN_SWITCH_C 18 // A4 (PC4 - PCINT12)
 
 int sine[255];
-int pot = 512;
+int freq = 512;
 
 void setup() 
 { 
@@ -57,17 +57,18 @@ void setup()
 
 void loop() 
 { 
-  //wave_sine();
-  wave_triangle();
+  wave_sine();
+  //wave_triangle();
+  //wave_square();
      
-  // Read pot
-  pot = ADCL;  // read low byte first  
-  pot |= ADCH << 8;  // then high
+  // Read pot for frequency
+  freq = ADCL;  // read low byte first  
+  freq |= ADCH << 8;  // then high
 
   
-  if (pot < POT_MAX) {
+  if (freq < POT_MAX) {
     // Limit the max frequency as it gets tricky to control
-    pot = POT_MAX; 
+    freq = POT_MAX; 
   }
 
 }
@@ -76,7 +77,7 @@ void wave_sine()
 {
   for (int i = 0; i < 255; i++) { 
     PORTD = sine[i]; 
-    _delay_loop_2(pot);
+    _delay_loop_2(freq);
           
   }
 }
@@ -85,12 +86,22 @@ void wave_triangle()
 {
   for (int i = 0; i < 255; i = i+2) { 
     PORTD = i; 
-    _delay_loop_2(pot);      
+    _delay_loop_2(freq);      
   }
   for (int i = 255; i > 0; i = i-2) { 
     PORTD = i; 
-    _delay_loop_2(pot);      
+    _delay_loop_2(freq);
+    //_delay_loop_2(freq/8);  // adjust this for saw tooth    
   }
 
 }
 
+void wave_square()
+{
+  // 0 -> 65536
+  PORTD = 255;
+  _delay_loop_2(freq * 64); // slow down to be in a similar range to the others
+  PORTD = 0;
+  _delay_loop_2(freq * 64); 
+  
+}
