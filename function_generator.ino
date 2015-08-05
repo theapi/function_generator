@@ -75,12 +75,12 @@ void setup()
   
   // LEDs off
   leds_off();
-  PORTC &= ~(1<<PC3); // Blue LED low (on: common anode)
+  PORTC &= ~(1<<PC5); // Blue LED low (on: common anode)
   wave = WAVE_SINE;
   
-  //PORTC &= ~(1<<PC5); // Red LED low (on: common anode)
+  //PORTC &= ~(1<<PC3); // Red LED low (on: common anode)
   //PORTC &= ~(1<<PC4); // Green LED low (on: common anode)
-  //PORTC &= ~(1<<PC3); // Blue LED low (on: common anode)
+  //PORTC &= ~(1<<PC5); // Blue LED low (on: common anode)
 
   
 } 
@@ -120,7 +120,7 @@ void loop()
       // Limit the max frequency as it gets tricky to control
       pot = POT_MAX; 
     }
-    
+   //pot=500; 
     if (wave == WAVE_SINE) {
       freq = pot; // no duty on the sine wave
     } else if (mode == MODE_DUTY) {
@@ -129,7 +129,7 @@ void loop()
       freq = pot; 
     }
     
-  //pot=12;
+  
   
     // Read the switches in one go
     uint8_t port_b = PINB; 
@@ -174,7 +174,7 @@ void loop()
     if (switches[0] == 0) {
         if (wave != WAVE_SINE) {
             leds_off();
-            PORTC &= ~(1<<PC3); // Blue LED low (on: common anode)
+            PORTC &= ~(1<<PC5); // Blue LED low (on: common anode)
             wave = WAVE_SINE; 
         }
     } else if (switches[1] == 0) {
@@ -186,7 +186,7 @@ void loop()
     } else if (switches[2] == 0) {
         if (wave != WAVE_SQUARE) {
             leds_off();
-            PORTC &= ~(1<<PC5); // Red LED low (on: common anode)
+            PORTC &= ~(1<<PC3); // Red LED low (on: common anode)
             wave = WAVE_SQUARE; 
         }
     } else if (switches[3] == 0) {
