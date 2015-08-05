@@ -12,18 +12,26 @@
 #define WAVE_SINE 0
 #define WAVE_TRIANGLE 1
 #define WAVE_SQUARE 2
-// ... @todo mode switch
+
+#define MODE_FREQ 0
+#define MODE_DUTY 1
 
 uint8_t wave = WAVE_SINE;
+uint8_t mode = MODE_FREQ;;
 int sine[255];
-int freq = 512;
+int pot = 512;
+int freq = pot;
+int duty = pot;
 
 void setup() 
 { 
     // Momentary switches
-    pinMode(8, INPUT);
-    pinMode(9, INPUT);
-    pinMode(10, INPUT);
+    pinMode(8, INPUT_PULLUP);
+    pinMode(9, INPUT_PULLUP);
+    pinMode(10, INPUT_PULLUP);
+    pinMode(11, INPUT_PULLUP);
+    // Toggle switch
+    pinMode(12, INPUT_PULLUP);
   
     // LEDs
     pinMode(A5, OUTPUT);
@@ -86,7 +94,7 @@ void leds_off() {
 void loop() 
 { 
     // http://www.labbookpages.co.uk/electronics/debounce.html
-    static uint8_t switches[3] = {0xFF, 0xFF, 0xFF};
+    static uint8_t switches[5] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
   
     switch (wave) {
         case WAVE_SINE:
@@ -103,16 +111,25 @@ void loop()
     //wave_triangle();
     //wave_square();
        
-    // Read pot for frequency
-    freq = ADCL;  // read low byte first  
-    freq |= ADCH << 8;  // then high
+    // Read pot 
+    pot = ADCL;  // read low byte first  
+    pot |= ADCH << 8;  // then high
   
     
-    if (freq < POT_MAX) {
+    if (pot < POT_MAX) {
       // Limit the max frequency as it gets tricky to control
-      freq = POT_MAX; 
+      pot = POT_MAX; 
     }
-  //freq=12;
+    
+    if (wave == WAVE_SINE) {
+      freq = pot; // no duty on the sine wave
+    } else if (mode == MODE_DUTY) {
+      duty = pot / 2;
+    } else {
+      freq = pot; 
+    }
+    
+  //pot=12;
   
     // Read the switches in one go
     uint8_t port_b = PINB; 
@@ -139,25 +156,49 @@ void loop()
     */
     switches[2] = bitRead(port_b, PINB2);
     
+    // arduino pin 11
+    /*
+    switches[3] <<= 1;
+    bitWrite(switches[3], 0, bitRead(port_b, PINB3)); 
+    */
+    switches[3] = bitRead(port_b, PINB3);
+    
+    // arduino pin 12
+    /*
+    switches[4] <<= 1;
+    bitWrite(switches[4], 0, bitRead(port_b, PINB4)); 
+    */
+    switches[4] = bitRead(port_b, PINB4);
+    
     // Switch wave if needed.
     if (switches[0] == 0) {
         if (wave != WAVE_SINE) {
             leds_off();
             PORTC &= ~(1<<PC3); // Blue LED low (on: common anode)
+            wave = WAVE_SINE; 
         }
-        wave = WAVE_SINE; 
     } else if (switches[1] == 0) {
         if (wave != WAVE_TRIANGLE) {
             leds_off();
             PORTC &= ~(1<<PC4); // Green LED low (on: common anode)
+            wave = WAVE_TRIANGLE;
         }
-        wave = WAVE_TRIANGLE; 
     } else if (switches[2] == 0) {
         if (wave != WAVE_SQUARE) {
             leds_off();
             PORTC &= ~(1<<PC5); // Red LED low (on: common anode)
+            wave = WAVE_SQUARE; 
         }
-        wave = WAVE_SQUARE; 
+    } else if (switches[3] == 0) {
+        // currently not used
+    } else if (switches[4] == 0) {
+        if (mode != MODE_FREQ) {
+            mode = MODE_FREQ;
+        }
+    } else if (switches[4] == 1) {
+        if (mode != MODE_DUTY) {
+            mode = MODE_DUTY;
+        }
     }
 }
 
@@ -172,16 +213,27 @@ void wave_sine()
 
 void wave_triangle()
 {
-  for (int i = 0; i < 255; i = i+2) { 
-    PORTD = i; 
-    _delay_loop_2(freq);      
+  if (mode == MODE_DUTY) {
+    // saw tooth 
+    for (int i = 0; i < 255; i = i+2) { 
+      PORTD = i; 
+      _delay_loop_2(freq);      
+    }
+    for (int i = 255; i > 0; i = i-2) { 
+      PORTD = i; 
+      _delay_loop_2(duty);  
+    }
+  } else {
+    // triangle
+    for (int i = 0; i < 255; i = i+2) { 
+      PORTD = i; 
+      _delay_loop_2(freq);      
+    }
+    for (int i = 255; i > 0; i = i-2) { 
+      PORTD = i; 
+      _delay_loop_2(freq);  
+    }
   }
-  for (int i = 255; i > 0; i = i-2) { 
-    PORTD = i; 
-    _delay_loop_2(freq);
-    //_delay_loop_2(freq/8);  // adjust this for saw tooth    
-  }
-
 }
 
 void wave_square()
