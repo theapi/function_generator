@@ -9,18 +9,26 @@
 
 #define POT_MAX 12 // 1kHz
 
-//#define PIN_SWITCH_A 16 // A2 (PC2 - PCINT10)
-//#define PIN_SWITCH_B 17 // A3 (PC3 - PCINT11)
-//#define PIN_SWITCH_C 18 // A4 (PC4 - PCINT12)
+#define WAVE_SINE 0
+#define WAVE_TRIANGLE 1
+#define WAVE_SQUARE 2
+// ... @todo mode switch
 
+uint8_t wave = WAVE_SINE;
 int sine[255];
 int freq = 512;
 
 void setup() 
 { 
-  pinMode(A5, OUTPUT);
-  pinMode(A4, OUTPUT);
-  pinMode(A3, OUTPUT);
+    // Momentary switches
+    pinMode(8, INPUT);
+    pinMode(9, INPUT);
+    pinMode(10, INPUT);
+  
+    // LEDs
+    pinMode(A5, OUTPUT);
+    pinMode(A4, OUTPUT);
+    pinMode(A3, OUTPUT);
   
      pinMode(0, OUTPUT); 
      pinMode(1, OUTPUT); 
@@ -58,9 +66,9 @@ void setup()
   noInterrupts(); // more stable without interuptions
   
   // LEDs off
-  PORTC |= 1<<PC5; // LED high (off: common anode)
-  PORTC |= 1<<PC4; // LED high (off: common anode)
-  PORTC |= 1<<PC3; // LED high (off: common anode)
+  leds_off();
+  PORTC &= ~(1<<PC3); // Blue LED low (on: common anode)
+  wave = WAVE_SINE;
   
   //PORTC &= ~(1<<PC5); // Red LED low (on: common anode)
   //PORTC &= ~(1<<PC4); // Green LED low (on: common anode)
@@ -69,22 +77,88 @@ void setup()
   
 } 
 
+void leds_off() {
+  PORTC |= 1<<PC5; // LED high (off: common anode)
+  PORTC |= 1<<PC4; // LED high (off: common anode)
+  PORTC |= 1<<PC3; // LED high (off: common anode)
+}
+
 void loop() 
 { 
-  wave_sine();
-  //wave_triangle();
-  //wave_square();
-     
-  // Read pot for frequency
-  freq = ADCL;  // read low byte first  
-  freq |= ADCH << 8;  // then high
-
+    // http://www.labbookpages.co.uk/electronics/debounce.html
+    static uint8_t switches[3] = {0xFF, 0xFF, 0xFF};
   
-  if (freq < POT_MAX) {
-    // Limit the max frequency as it gets tricky to control
-    freq = POT_MAX; 
-  }
-//freq=12;
+    switch (wave) {
+        case WAVE_SINE:
+            wave_sine();
+            break;
+        case WAVE_TRIANGLE:
+            wave_triangle();
+            break;
+        case WAVE_SQUARE:
+            wave_square();
+            break;
+    }
+    //wave_sine();
+    //wave_triangle();
+    //wave_square();
+       
+    // Read pot for frequency
+    freq = ADCL;  // read low byte first  
+    freq |= ADCH << 8;  // then high
+  
+    
+    if (freq < POT_MAX) {
+      // Limit the max frequency as it gets tricky to control
+      freq = POT_MAX; 
+    }
+  //freq=12;
+  
+    // Read the switches in one go
+    uint8_t port_b = PINB; 
+
+    // arduino pin 8
+    /*
+    switches[0] <<= 1; // Shift the variable towards the most significant bit
+    // Set the least significant bit to the current switch value
+    bitWrite(switches[0], 0, bitRead(port_b, PINB0)); 
+    */
+    switches[0] = bitRead(port_b, PINB0);
+    
+    // arduino pin 9
+    /*
+    switches[1] <<= 1;
+    bitWrite(switches[1], 0, bitRead(port_b, PINB1)); 
+    */
+    switches[1] = bitRead(port_b, PINB1);
+    
+    // arduino pin 10
+    /*
+    switches[2] <<= 1;
+    bitWrite(switches[2], 0, bitRead(port_b, PINB2)); 
+    */
+    switches[2] = bitRead(port_b, PINB2);
+    
+    // Switch wave if needed.
+    if (switches[0] == 0) {
+        if (wave != WAVE_SINE) {
+            leds_off();
+            PORTC &= ~(1<<PC3); // Blue LED low (on: common anode)
+        }
+        wave = WAVE_SINE; 
+    } else if (switches[1] == 0) {
+        if (wave != WAVE_TRIANGLE) {
+            leds_off();
+            PORTC &= ~(1<<PC4); // Green LED low (on: common anode)
+        }
+        wave = WAVE_TRIANGLE; 
+    } else if (switches[2] == 0) {
+        if (wave != WAVE_SQUARE) {
+            leds_off();
+            PORTC &= ~(1<<PC5); // Red LED low (on: common anode)
+        }
+        wave = WAVE_SQUARE; 
+    }
 }
 
 void wave_sine()
