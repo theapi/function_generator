@@ -18,6 +18,10 @@ int freq = 512;
 
 void setup() 
 { 
+  pinMode(A5, OUTPUT);
+  pinMode(A4, OUTPUT);
+  pinMode(A3, OUTPUT);
+  
      pinMode(0, OUTPUT); 
      pinMode(1, OUTPUT); 
      pinMode(2, OUTPUT); 
@@ -37,7 +41,7 @@ void setup()
      }
 
      
-  //set up continuous sampling of analog pin 0
+  //Set up continuous sampling of analog pin 0
   
   //clear ADCSRA and ADCSRB registers
   ADCSRA = 0;
@@ -52,7 +56,17 @@ void setup()
   ADCSRA |= (1 << ADSC); //start ADC measurements
      
   noInterrupts(); // more stable without interuptions
-     
+  
+  // LEDs off
+  PORTC |= 1<<PC5; // LED high (off: common anode)
+  PORTC |= 1<<PC4; // LED high (off: common anode)
+  PORTC |= 1<<PC3; // LED high (off: common anode)
+  
+  //PORTC &= ~(1<<PC5); // Red LED low (on: common anode)
+  //PORTC &= ~(1<<PC4); // Green LED low (on: common anode)
+  //PORTC &= ~(1<<PC3); // Blue LED low (on: common anode)
+
+  
 } 
 
 void loop() 
@@ -70,7 +84,7 @@ void loop()
     // Limit the max frequency as it gets tricky to control
     freq = POT_MAX; 
   }
-
+//freq=12;
 }
 
 void wave_sine()
