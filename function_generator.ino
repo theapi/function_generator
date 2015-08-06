@@ -124,7 +124,7 @@ void loop()
     if (wave == WAVE_SINE) {
       freq = pot; // no duty on the sine wave
     } else if (mode == MODE_DUTY) {
-      duty = pot / 2;
+      duty = pot;
     } else {
       freq = pot; 
     }
@@ -184,13 +184,13 @@ void loop()
             wave = WAVE_TRIANGLE;
         }
     } else if (switches[2] == 0) {
+        // currently not used
+    } else if (switches[3] == 0) {
         if (wave != WAVE_SQUARE) {
             leds_off();
             PORTC &= ~(1<<PC3); // Red LED low (on: common anode)
             wave = WAVE_SQUARE; 
         }
-    } else if (switches[3] == 0) {
-        // currently not used
     } else if (switches[4] == 0) {
         if (mode != MODE_FREQ) {
             mode = MODE_FREQ;
@@ -217,11 +217,11 @@ void wave_triangle()
     // saw tooth 
     for (int i = 0; i < 255; i = i+2) { 
       PORTD = i; 
-      _delay_loop_2(freq);      
+      _delay_loop_2(duty);      
     }
     for (int i = 255; i > 0; i = i-2) { 
       PORTD = i; 
-      _delay_loop_2(duty);  
+      _delay_loop_2(duty / 8);  
     }
   } else {
     // triangle
@@ -239,9 +239,15 @@ void wave_triangle()
 void wave_square()
 {
   // 0 -> 65536
-  PORTD = 255;
-  _delay_loop_2(freq * 64); // slow down to be in a similar range to the others
-  PORTD = 0;
-  _delay_loop_2(freq * 64); 
-  
+  if (mode == MODE_DUTY) {
+    PORTD = 255;
+    _delay_loop_2(freq * 64); // slow down to be in a similar range to the others
+    PORTD = 0;
+    _delay_loop_2(duty * 64); 
+  } else {
+    PORTD = 255;
+    _delay_loop_2(freq * 64); // slow down to be in a similar range to the others
+    PORTD = 0;
+    _delay_loop_2(freq * 64); 
+  }
 }
